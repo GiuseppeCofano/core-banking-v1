@@ -1,0 +1,7 @@
+# Ignore git, IDE files, binaries
+.git
+.gitignore
+.vscode
+*.md
+data/
+k8s/
