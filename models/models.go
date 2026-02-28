@@ -14,9 +14,10 @@ const (
 type TransactionStatus string
 
 const (
-	TransactionStatusPending   TransactionStatus = "PENDING"
-	TransactionStatusCompleted TransactionStatus = "COMPLETED"
-	TransactionStatusFailed    TransactionStatus = "FAILED"
+	TransactionStatusPending      TransactionStatus = "PENDING"
+	TransactionStatusCompleted    TransactionStatus = "COMPLETED"
+	TransactionStatusFailed       TransactionStatus = "FAILED"
+	TransactionStatusCompensated  TransactionStatus = "COMPENSATED"
 )
 
 // Account represents a bank account.
@@ -76,10 +77,32 @@ type TransactionResponse struct {
 	TransactionID string            `json:"transaction_id"`
 	Status        TransactionStatus `json:"status"`
 	Message       string            `json:"message,omitempty"`
+	SagaSteps     []SagaStep        `json:"saga_steps,omitempty"`
 }
 
 // ErrorResponse represents an API error.
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Details string `json:"details,omitempty"`
+}
+
+// --- Saga types ---
+
+// SagaStepStatus represents the status of an individual saga step.
+type SagaStepStatus string
+
+const (
+	SagaStepPending   SagaStepStatus = "PENDING"
+	SagaStepRunning   SagaStepStatus = "RUNNING"
+	SagaStepDone      SagaStepStatus = "DONE"
+	SagaStepFailed    SagaStepStatus = "FAILED"
+	SagaStepSkipped   SagaStepStatus = "SKIPPED"
+)
+
+// SagaStep records the outcome of one step in a saga.
+type SagaStep struct {
+	Name      string         `json:"name"`
+	Status    SagaStepStatus `json:"status"`
+	Error     string         `json:"error,omitempty"`
+	Timestamp time.Time      `json:"timestamp"`
 }

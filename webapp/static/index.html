@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Core Banking Engine Dashboard — manage accounts, deposits, and transfers">
+    <title>Core Banking — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>
+                </svg>
+            </div>
+            <span class="brand-text">CoreBank</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-view="dashboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-view="accounts">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>Accounts</span>
+            </a>
+            <a href="#" class="nav-item" data-view="transactions">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                <span>Transactions</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="status-dot"></div>
+            <span>All systems operational</span>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Header -->
+        <header class="header">
+            <div>
+                <h1 id="page-title">Dashboard</h1>
+                <p class="header-subtitle" id="page-subtitle">Overview of your banking operations</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-outline" id="btn-refresh" title="Refresh">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                </button>
+                <button class="btn btn-primary" id="btn-new-account">+ New Account</button>
+            </div>
+        </header>
+
+        <!-- Dashboard View -->
+        <section class="view active" id="view-dashboard">
+            <!-- Stats Row -->
+            <div class="stats-row" id="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Total Accounts</div>
+                    <div class="stat-value" id="stat-accounts">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Balance</div>
+                    <div class="stat-value" id="stat-balance">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Service Status</div>
+                    <div class="stat-value stat-ok" id="stat-status">Checking…</div>
+                </div>
+            </div>
+
+            <!-- Accounts + Actions -->
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Accounts</h2>
+                    </div>
+                    <div class="card-body" id="accounts-list">
+                        <div class="empty-state">Loading accounts…</div>
+                    </div>
+                </div>
+
+                <div class="actions-column">
+                    <!-- Deposit Card -->
+                    <div class="card action-card">
+                        <div class="card-header">
+                            <h2>💰 Deposit</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="form-deposit">
+                                <div class="form-group">
+                                    <label for="deposit-account">Account</label>
+                                    <select id="deposit-account" required></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="deposit-amount">Amount (EUR)</label>
+                                    <input type="number" id="deposit-amount" min="0.01" step="0.01" placeholder="0.00" required>
+                                </div>
+                                <button type="submit" class="btn btn-success btn-full">Deposit</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Transfer Card -->
+                    <div class="card action-card">
+                        <div class="card-header">
+                            <h2>🔄 Transfer</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="form-transfer">
+                                <div class="form-group">
+                                    <label for="transfer-from">From</label>
+                                    <select id="transfer-from" required></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="transfer-to">To</label>
+                                    <select id="transfer-to" required></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="transfer-amount">Amount (EUR)</label>
+                                    <input type="number" id="transfer-amount" min="0.01" step="0.01" placeholder="0.00" required>
+                                </div>
+                                <button type="submit" class="btn btn-accent btn-full">Transfer</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Accounts View -->
+        <section class="view" id="view-accounts">
+            <div class="card">
+                <div class="card-header">
+                    <h2>All Accounts</h2>
+                    <button class="btn btn-primary btn-sm" id="btn-new-account-2">+ New Account</button>
+                </div>
+                <div class="card-body" id="accounts-table-body">
+                    <div class="empty-state">Loading…</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Transactions View -->
+        <section class="view" id="view-transactions">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Recent Transactions</h2>
+                    <div class="form-group form-inline">
+                        <label for="txn-account-filter">Account:</label>
+                        <select id="txn-account-filter"><option value="">All</option></select>
+                    </div>
+                </div>
+                <div class="card-body" id="transactions-list">
+                    <div class="empty-state">Select an account to view transactions</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: New Account -->
+    <div class="modal-overlay" id="modal-new-account">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Create Account</h2>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <form id="form-new-account">
+                <div class="form-group">
+                    <label for="new-owner">Owner Name</label>
+                    <input type="text" id="new-owner" placeholder="e.g. Alice" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-currency">Currency</label>
+                    <select id="new-currency">
+                        <option value="EUR">EUR — Euro</option>
+                        <option value="USD">USD — US Dollar</option>
+                        <option value="GBP">GBP — British Pound</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
