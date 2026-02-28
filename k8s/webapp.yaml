@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: core-banking
+  labels:
+    app: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+        - name: webapp
+          image: gcr.io/PROJECT_ID/webapp:latest
+          ports:
+            - containerPort: 8083
+          env:
+            - name: PORT
+              value: "8083"
+            - name: LEDGER_URL
+              value: "http://ledger.core-banking.svc.cluster.local:8080"
+            - name: PROCESSOR_URL
+              value: "http://processor.core-banking.svc.cluster.local:8082"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 150m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp
+  namespace: core-banking
+spec:
+  selector:
+    app: webapp
+  ports:
+    - port: 8083
+      targetPort: 8083
+      protocol: TCP
+  type: LoadBalancer

@@ -62,7 +62,8 @@ func (s *BankingService) Deposit(req models.DepositRequest) (*models.Transaction
 	}, nil
 }
 
-// Transfer moves funds from one account to another using double-entry bookkeeping.
+// Transfer moves funds from one account to another using the Saga pattern.
+// The saga orchestrator handles debit, credit, and compensation on failure.
 func (s *BankingService) Transfer(req models.TransferRequest) (*models.TransactionResponse, error) {
 	if req.Amount <= 0 {
 		return nil, fmt.Errorf("transfer amount must be positive")
@@ -71,60 +72,8 @@ func (s *BankingService) Transfer(req models.TransferRequest) (*models.Transacti
 		return nil, fmt.Errorf("cannot transfer to the same account")
 	}
 
-	// Verify both accounts exist.
-	from, err := s.getAccount(req.FromAccountID)
-	if err != nil {
-		return nil, fmt.Errorf("source account not found: %w", err)
-	}
-	_, err = s.getAccount(req.ToAccountID)
-	if err != nil {
-		return nil, fmt.Errorf("destination account not found: %w", err)
-	}
-
-	// Check sufficient funds.
-	if from.Balance < req.Amount {
-		return nil, fmt.Errorf("insufficient funds: available %.2f, requested %.2f", from.Balance, req.Amount)
-	}
-
-	txnID := uuid.New().String()
-
-	// Debit the source account.
-	debitReq := models.CreateLedgerEntryRequest{
-		TransactionID: txnID,
-		AccountID:     req.FromAccountID,
-		Type:          models.TransactionTypeTransfer,
-		Amount:        -req.Amount, // negative = debit
-		Description:   fmt.Sprintf("Transfer to %s: -%.2f", req.ToAccountID, req.Amount),
-	}
-	if err := s.createLedgerEntry(debitReq); err != nil {
-		return &models.TransactionResponse{
-			TransactionID: txnID,
-			Status:        models.TransactionStatusFailed,
-			Message:       "debit failed: " + err.Error(),
-		}, err
-	}
-
-	// Credit the destination account.
-	creditReq := models.CreateLedgerEntryRequest{
-		TransactionID: txnID,
-		AccountID:     req.ToAccountID,
-		Type:          models.TransactionTypeTransfer,
-		Amount:        req.Amount, // positive = credit
-		Description:   fmt.Sprintf("Transfer from %s: +%.2f", req.FromAccountID, req.Amount),
-	}
-	if err := s.createLedgerEntry(creditReq); err != nil {
-		return &models.TransactionResponse{
-			TransactionID: txnID,
-			Status:        models.TransactionStatusFailed,
-			Message:       "credit failed: " + err.Error(),
-		}, err
-	}
-
-	return &models.TransactionResponse{
-		TransactionID: txnID,
-		Status:        models.TransactionStatusCompleted,
-		Message:       fmt.Sprintf("Transferred %.2f from %s to %s", req.Amount, req.FromAccountID, req.ToAccountID),
-	}, nil
+	saga := NewTransferSaga(s, req)
+	return saga.Execute()
 }
 
 // --- Internal helpers ---
