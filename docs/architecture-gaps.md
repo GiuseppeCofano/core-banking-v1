@@ -45,20 +45,28 @@ A GitHub Actions workflow should:
 3. Deploy to GKE staging automatically
 4. Promote to production with manual approval
 
+### 9. WebApp Hardening
+The WebApp reverse proxy (`webapp/main.go`) currently has no CORS policy, no Content-Security-Policy headers, and no session/cookie management. For production:
+- Add **CORS** headers restricting origins to the WebApp domain
+- Set `Content-Security-Policy`, `X-Frame-Options`, and `X-Content-Type-Options` response headers
+- Serve static assets with **cache-busting** hashes
+- Terminate TLS at the Ingress / LoadBalancer level
+- Consider adding **rate limiting** to the proxy endpoints
+
 ---
 
 ## 🟢 Nice to Have
 
-### 9. Pagination on Ledger Entries
+### 10. Pagination on Ledger Entries
 `GET /ledger/entries/{account_id}` returns all entries. Add `?limit=50&offset=0` or cursor-based pagination before any account accumulates thousands of entries.
 
-### 10. API Versioning
+### 11. API Versioning
 Prefix all routes with `/v1/` (e.g. `/v1/accounts`) to allow non-breaking API evolution.
 
-### 11. Graceful Shutdown
+### 12. Graceful Shutdown
 The HTTP servers don't handle `SIGTERM`. During K8s rolling deployments, in-flight requests get killed. Use `signal.NotifyContext` + `http.Server.Shutdown()` for clean draining.
 
-### 12. Unit & Integration Tests
+### 13. Unit & Integration Tests
 Add Go unit tests for the business logic in `core/banking.go` and integration tests that spin up the Ledger against an in-memory SQLite database.
 
 ---
@@ -70,6 +78,6 @@ Add Go unit tests for the business logic in `core/banking.go` and integration te
 | **1** | Float→int cents, idempotency | ~1 day |
 | **2** | Saga pattern | ~2 days |
 | **3** | PostgreSQL migration, graceful shutdown | ~1–2 days |
-| **4** | Auth (JWT + mTLS), rate limiting | ~2 days |
+| **4** | Auth (JWT + mTLS), rate limiting, WebApp hardening | ~2 days |
 | **5** | Observability (slog + OpenTelemetry) | ~1 day |
 | **6** | CI/CD, pagination, API versioning, tests | ~2 days |

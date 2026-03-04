@@ -5,7 +5,19 @@ A microservices-style core banking engine written in Go, designed for Kubernetes
 ## Architecture
 
 ```
-Client → [Processor :8082] → [Core :8081] → [Ledger :8080] → SQLite (PVC) / Cloud Spanner
+                        ┌─────────────────┐
+                        │  WebApp :8083    │
+                        │ (UI + API proxy) │
+                        └───────┬─────────┘
+                  ┌─────────────┼─────────────┐
+                  ▼                           ▼
+       [Processor :8082]              [Ledger :8080]
+              │                              ▲
+              ▼                              │
+       [Core :8081] ─────────────────────────┘
+              │
+              ▼
+    SQLite (PVC) / Cloud Spanner
 ```
 
 | Service | Port | Role |
@@ -13,6 +25,7 @@ Client → [Processor :8082] → [Core :8081] → [Ledger :8080] → SQLite (PVC
 | **Ledger** | 8080 | Account management & double-entry ledger (SQLite or Spanner) |
 | **Core** | 8081 | Business logic — deposits & transfers (Saga pattern) |
 | **Processor** | 8082 | Request validation & routing gateway |
+| **WebApp** | 8083 | Browser-based dashboard — serves static UI and proxies API calls to Ledger & Processor |
 
 The **Ledger** supports two database backends, selectable via the `DB_BACKEND` env var:
 - `sqlite` (default) — embedded SQLite with PVC storage
@@ -40,7 +53,7 @@ make docker-push
 Replace `PROJECT_ID` in `k8s/*.yaml` with your actual GCP project ID:
 
 ```bash
-sed -i '' "s/PROJECT_ID/$PROJECT_ID/g" k8s/ledger.yaml k8s/core.yaml k8s/processor.yaml
+sed -i '' "s/PROJECT_ID/$PROJECT_ID/g" k8s/ledger.yaml k8s/core.yaml k8s/processor.yaml k8s/webapp.yaml
 ```
 
 ### 3. Deploy to GKE
@@ -55,10 +68,13 @@ make k8s-apply
 # Option A: port-forward for local testing
 kubectl port-forward -n core-banking svc/ledger 8080:8080 &
 kubectl port-forward -n core-banking svc/processor 8082:8082 &
+kubectl port-forward -n core-banking svc/webapp 8083:8083 &
 
-# Option B: The processor service uses LoadBalancer —
+# Then open the web dashboard at http://localhost:8083
+
+# Option B: The webapp service uses LoadBalancer —
 # get its external IP with:
-kubectl get svc -n core-banking processor
+kubectl get svc -n core-banking webapp
 ```
 
 ## API Examples
@@ -150,6 +166,13 @@ core-banking-v1/
 │   ├── processor.go
 │   ├── handlers.go
 │   └── Dockerfile
+├── webapp/          # Web dashboard (UI + reverse proxy)
+│   ├── main.go      # Go server — static files + API proxy
+│   ├── static/
+│   │   ├── index.html
+│   │   ├── style.css
+│   │   └── app.js
+│   └── Dockerfile
 ├── terraform/       # Spanner infrastructure (IaC)
 │   ├── main.tf
 │   ├── variables.tf
@@ -159,7 +182,8 @@ core-banking-v1/
 │   ├── namespace.yaml
 │   ├── ledger.yaml
 │   ├── core.yaml
-│   └── processor.yaml
+│   ├── processor.yaml
+│   └── webapp.yaml
 ├── go.mod
 ├── Makefile
 └── README.md
