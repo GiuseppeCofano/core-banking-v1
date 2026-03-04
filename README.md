@@ -5,19 +5,22 @@ A microservices-style core banking engine written in Go, designed for Kubernetes
 ## Architecture
 
 ```
-                        ┌─────────────────┐
-                        │  WebApp :8083    │
-                        │ (UI + API proxy) │
-                        └───────┬─────────┘
-                  ┌─────────────┼─────────────┐
-                  ▼                           ▼
-       [Processor :8082]              [Ledger :8080]
-              │                              ▲
-              ▼                              │
-       [Core :8081] ─────────────────────────┘
-              │
-              ▼
-    SQLite (PVC) / Cloud Spanner
+       ┌─────────────────────┐
+       │    WebApp :8083     │
+       │  (UI + API proxy)   │
+       └──┬──────────────┬───┘
+          │              │
+          ▼              │  (read accounts/ledger)
+  [Processor :8082]      │
+          │              │
+          ▼              │
+    [Core :8081]         │
+          │              │
+          ▼              │
+   [Ledger :8080] ◄─────┘
+          │
+          ▼
+  SQLite / Spanner
 ```
 
 | Service | Port | Role |
