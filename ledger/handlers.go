@@ -11,11 +11,11 @@ import (
 
 // Handlers holds the database reference and exposes HTTP handler methods.
 type Handlers struct {
-	db *DB
+	db Store
 }
 
 // NewHandlers creates a new Handlers instance.
-func NewHandlers(db *DB) *Handlers {
+func NewHandlers(db Store) *Handlers {
 	return &Handlers{db: db}
 }
 

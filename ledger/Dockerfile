@@ -4,9 +4,9 @@ FROM golang:1.22-alpine AS builder
 RUN apk add --no-cache gcc musl-dev
 
 WORKDIR /src
-COPY go.mod ./
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
-RUN go mod tidy
 RUN CGO_ENABLED=1 GOOS=linux go build -o /bin/ledger ./ledger
 
 # -- Runtime stage --

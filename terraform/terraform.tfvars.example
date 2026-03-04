@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+project_id             = "my-gcp-project"
+region                 = "us-central1"
+spanner_instance_name  = "core-banking-ledger"
+spanner_database_name  = "ledger"
+spanner_config         = "regional-us-central1"
+processing_units       = 100        # 100 = minimum; 1000 = 1 node
+environment            = "dev"
+deletion_protection    = false       # set to true for production
+ledger_service_account = ""          # e.g. "ledger-sa@my-gcp-project.iam.gserviceaccount.com"

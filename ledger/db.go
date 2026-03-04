@@ -10,25 +10,28 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// DB wraps the SQLite connection and provides helper methods.
-type DB struct {
+// SQLiteStore wraps the SQLite connection and implements the Store interface.
+type SQLiteStore struct {
 	conn *sql.DB
 }
 
-// NewDB opens (or creates) the SQLite database and runs migrations.
-func NewDB(path string) (*DB, error) {
+// Compile-time check: SQLiteStore must satisfy Store.
+var _ Store = (*SQLiteStore)(nil)
+
+// NewSQLiteStore opens (or creates) the SQLite database and runs migrations.
+func NewSQLiteStore(path string) (*SQLiteStore, error) {
 	conn, err := sql.Open("sqlite3", path+"?_journal_mode=WAL&_busy_timeout=5000")
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
-	db := &DB{conn: conn}
+	db := &SQLiteStore{conn: conn}
 	if err := db.migrate(); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
 	return db, nil
 }
 
-func (db *DB) migrate() error {
+func (db *SQLiteStore) migrate() error {
 	schema := `
 	CREATE TABLE IF NOT EXISTS accounts (
 		id         TEXT PRIMARY KEY,
@@ -59,7 +62,7 @@ func (db *DB) migrate() error {
 }
 
 // CreateAccount inserts a new account and returns it.
-func (db *DB) CreateAccount(owner, currency string) (*models.Account, error) {
+func (db *SQLiteStore) CreateAccount(owner, currency string) (*models.Account, error) {
 	now := time.Now().UTC()
 	account := &models.Account{
 		ID:        uuid.New().String(),
@@ -82,7 +85,7 @@ func (db *DB) CreateAccount(owner, currency string) (*models.Account, error) {
 }
 
 // GetAccount retrieves an account by ID.
-func (db *DB) GetAccount(id string) (*models.Account, error) {
+func (db *SQLiteStore) GetAccount(id string) (*models.Account, error) {
 	row := db.conn.QueryRow(
 		`SELECT id, owner, currency, balance, created_at, updated_at
 		 FROM accounts WHERE id = ?`, id,
@@ -96,7 +99,7 @@ func (db *DB) GetAccount(id string) (*models.Account, error) {
 }
 
 // CreateLedgerEntry records an entry and updates the account balance atomically.
-func (db *DB) CreateLedgerEntry(req models.CreateLedgerEntryRequest) (*models.LedgerEntry, error) {
+func (db *SQLiteStore) CreateLedgerEntry(req models.CreateLedgerEntryRequest) (*models.LedgerEntry, error) {
 	tx, err := db.conn.Begin()
 	if err != nil {
 		return nil, fmt.Errorf("begin tx: %w", err)
@@ -152,7 +155,7 @@ func (db *DB) CreateLedgerEntry(req models.CreateLedgerEntryRequest) (*models.Le
 }
 
 // GetEntriesByAccount returns all ledger entries for a given account.
-func (db *DB) GetEntriesByAccount(accountID string) ([]models.LedgerEntry, error) {
+func (db *SQLiteStore) GetEntriesByAccount(accountID string) ([]models.LedgerEntry, error) {
 	rows, err := db.conn.Query(
 		`SELECT id, transaction_id, account_id, type, amount, balance, description, created_at
 		 FROM ledger_entries WHERE account_id = ? ORDER BY created_at ASC`, accountID,
@@ -175,6 +178,6 @@ func (db *DB) GetEntriesByAccount(accountID string) ([]models.LedgerEntry, error
 }
 
 // Close closes the database connection.
-func (db *DB) Close() error {
+func (db *SQLiteStore) Close() error {
 	return db.conn.Close()
 }

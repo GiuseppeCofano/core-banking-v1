@@ -8,23 +8,48 @@ import (
 )
 
 func main() {
-	// Database path — defaults to ./data/banking.db
-	dbDir := os.Getenv("DATA_DIR")
-	if dbDir == "" {
-		dbDir = "./data"
+	backend := os.Getenv("DB_BACKEND")
+	if backend == "" {
+		backend = "sqlite"
 	}
-	if err := os.MkdirAll(dbDir, 0755); err != nil {
-		log.Fatalf("create data dir: %v", err)
-	}
-	dbPath := filepath.Join(dbDir, "banking.db")
 
-	db, err := NewDB(dbPath)
-	if err != nil {
-		log.Fatalf("init database: %v", err)
-	}
-	defer db.Close()
+	var store Store
+	var err error
 
-	h := NewHandlers(db)
+	switch backend {
+	case "spanner":
+		spannerDB := os.Getenv("SPANNER_DATABASE")
+		if spannerDB == "" {
+			log.Fatal("SPANNER_DATABASE env var is required when DB_BACKEND=spanner " +
+				"(format: projects/<project>/instances/<instance>/databases/<database>)")
+		}
+		store, err = NewSpannerStore(spannerDB)
+		if err != nil {
+			log.Fatalf("init spanner store: %v", err)
+		}
+		log.Printf("Using Spanner backend: %s", spannerDB)
+
+	case "sqlite":
+		dbDir := os.Getenv("DATA_DIR")
+		if dbDir == "" {
+			dbDir = "./data"
+		}
+		if err := os.MkdirAll(dbDir, 0755); err != nil {
+			log.Fatalf("create data dir: %v", err)
+		}
+		dbPath := filepath.Join(dbDir, "banking.db")
+		store, err = NewSQLiteStore(dbPath)
+		if err != nil {
+			log.Fatalf("init sqlite store: %v", err)
+		}
+		log.Printf("Using SQLite backend: %s", dbPath)
+
+	default:
+		log.Fatalf("unknown DB_BACKEND %q (supported: sqlite, spanner)", backend)
+	}
+	defer store.Close()
+
+	h := NewHandlers(store)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/accounts/", h.AccountsRouter)

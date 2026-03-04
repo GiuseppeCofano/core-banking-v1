@@ -26,7 +26,12 @@ spec:
     metadata:
       labels:
         app: ledger
+      # Uncomment for GKE Workload Identity:
+      # annotations:
+      #   iam.gke.io/gcp-service-account: ledger-sa@PROJECT_ID.iam.gserviceaccount.com
     spec:
+      # Uncomment for GKE Workload Identity:
+      # serviceAccountName: ledger-ksa
       containers:
         - name: ledger
           image: gcr.io/PROJECT_ID/ledger:latest
@@ -35,8 +40,16 @@ spec:
           env:
             - name: PORT
               value: "8080"
+            # ── Database Backend ──
+            # Set to "spanner" to use Cloud Spanner, or "sqlite" (default) for local SQLite.
+            - name: DB_BACKEND
+              value: "sqlite"
+            # ── SQLite settings (used when DB_BACKEND=sqlite) ──
             - name: DATA_DIR
               value: "/app/data"
+            # ── Spanner settings (used when DB_BACKEND=spanner) ──
+            # - name: SPANNER_DATABASE
+            #   value: "projects/PROJECT_ID/instances/core-banking-ledger/databases/ledger"
           volumeMounts:
             - name: ledger-data
               mountPath: /app/data
